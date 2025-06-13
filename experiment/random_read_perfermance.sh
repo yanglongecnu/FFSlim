@@ -68,17 +68,17 @@
 # python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_files_loader.py gqa
 
 
-# TDP
-sudo ./rm_cache.sh
-python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py flickr30k
-sudo ./rm_cache.sh
-python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py flickr30k_entities
-sudo ./rm_cache.sh
-python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py mscoco
-sudo ./rm_cache.sh
-python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py vqa2
-sudo ./rm_cache.sh
-python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py gqa
+# # TDP
+# sudo ./rm_cache.sh
+# python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py flickr30k
+# sudo ./rm_cache.sh
+# python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py flickr30k_entities
+# sudo ./rm_cache.sh
+# python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py mscoco
+# sudo ./rm_cache.sh
+# python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py vqa2
+# sudo ./rm_cache.sh
+# python /home/llm/experiment/dataset_Analysis_Modeling/loaders/random_TDP_loader.py gqa
 
 # # FFRecord
 # sudo ./rm_cache.sh

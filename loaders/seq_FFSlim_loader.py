@@ -87,10 +87,10 @@ print(f"dataset:{args.dataset}")
 
 # flickr30k
 if args.dataset == "flickr30k":
-    filename = "/mnt/datasets/flickr30k_FFSlim/mscoco_caption.ffr"
+    filename = "/mnt/datasets/flickr30k_FFSlim/flickr30k_caption.ffr"
 # flickr30k_entities
 if args.dataset == "flickr30k_entities":
-    filename = "/mnt/datasets/flickr30k_entities_FFSlim/mscoco_caption.ffr"
+    filename = "/mnt/datasets/flickr30k_entities_FFSlim/flickr30k_entities_caption.ffr"
 # mscoco
 if args.dataset == "mscoco":
     filename = "/mnt/datasets/mscoco_FFSlim/mscoco_caption.ffr"
