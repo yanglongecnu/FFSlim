@@ -52,9 +52,9 @@ class LRUCache:
             # with open("/home/llm/experiment/dataset_Analysis_Modeling/log.txt","a+") as f:
             #     f.write(f"==del==key:{lru_node.key},len={len(lru_node.value["captions"])}\n")
             for i in range(len(lru_node.value["captions"])):
-                # if lru_node.key + index in self.index:
-                    # with open("/home/llm/experiment/dataset_Analysis_Modeling/log.txt","a+") as f:
-                    #     f.write(f"==in==key:{lru_node.key},index={index}\n")
+                # if lru_node.key + i in self.index:
+                #     with open("/home/llm/experiment/dataset_Analysis_Modeling/log.txt","a+") as f:
+                #         f.write(f"==in==key:{lru_node.key},index={i}\n")
                 del self.index[lru_node.key + i]
                 # else:
                 #     with open("/home/llm/experiment/dataset_Analysis_Modeling/log.txt","a+") as f:

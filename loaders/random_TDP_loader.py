@@ -3,6 +3,12 @@ from PIL import Image
 import random
 import pandas as pd
 import mmap
+from tdp_lru import LRUCache
+from tdp_lfu import LFUCache
+from tdp_iacma_with_heap import IACMACacheWithHeap
+from tdp_iacma import IACMACache
+from tdp_iacma_with_memory import IACMACacheWithMemory
+
 
 BLOCK_SIZE = 4096
 
@@ -40,7 +46,7 @@ def read_file_with_o_direct(path):
         os.close(fd)
 
 
-def process_samples(sample_ids, base_dir="data"):
+def process_samples(sample_ids, base_dir, num, cache_algorithm):
     csv_path = os.path.join(base_dir,base_dir.split("/")[-1]+".csv")
     df = pd.read_csv(csv_path)
 
@@ -52,7 +58,31 @@ def process_samples(sample_ids, base_dir="data"):
     #     nums.append(len(images[index])+len(captions[index]))
     # print(f"size={sum(nums)}")
 
+    # 构建缓存
+    if num != 0:
+        if cache_algorithm == "lru":
+            cache = LRUCache(num)
+        elif cache_algorithm == "lfu":
+            cache = LFUCache(num)
+        elif cache_algorithm == "iacma_with_heap":
+            cache = IACMACacheWithHeap(num, images)
+        elif cache_algorithm == "iacma":
+            cache = IACMACache(num, images)
+        elif cache_algorithm == "iacma_with_memory":
+            cache = IACMACacheWithMemory(num, images)
+        hits = 0
+        count = 0
+    
     for sid in sample_ids:
+        if num != 0:
+            count += 1
+            img_data = cache.get(images[sid].split('.')[0])
+            # 缓存命中
+            if img_data != -1:
+                hits += 1
+                result = (img_data,captions[sid])
+                continue
+        # 缓存未命中
         img_path = os.path.join(base_dir,"img/"+images[sid])
         # 处理图像文件
         if os.path.exists(img_path):
@@ -64,45 +94,61 @@ def process_samples(sample_ids, base_dir="data"):
                 print(f"图像文件 {images[sid]} 损坏: {str(e)}")
         else:
             print(f"图像文件 {images[sid]} 不存在")
-
+        if num != 0:
+            cache.put(images[sid].split('.')[0],img_data)
         txt_data = captions[sid]
+        result = (img_data,txt_data)
+        # if sid%10000==0:
+        #     print(f"sid={sid}")
 
-# 使用示例
-if __name__ == "__main__":
-    import argparse
-    # 创建解析器
-    parser = argparse.ArgumentParser()
-    # 添加参数
-    parser.add_argument('dataset', type=str, help='输入数据集名称')
-    # 解析参数
-    args = parser.parse_args()
-    print(f"dataset:{args.dataset}")
+    if num != 0:
+        with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+            f.write(f"cache hits:{hits},requests:{count},cache hit rate:{hits/count}\n")
 
-    # flickr30k
-    if args.dataset == "flickr30k":
-        filename = "/mnt/datasets/flickr30k_TDP"
-    # flickr30k_entities
-    if args.dataset == "flickr30k_entities":
-        filename = "/mnt/datasets/flickr30k_entities_TDP"
-    # mscoco
-    if args.dataset == "mscoco":
-        filename = "/mnt/datasets/mscoco_TDP"
-    # vqa2
-    if args.dataset == "vqa2":
-        filename = "/mnt/datasets/vqa2_TDP"
-    # gqa
-    if args.dataset == "gqa":
-        filename = "/mnt/datasets/gqa_TDP"
 
-    samples = {"flickr30k":155070,"flickr30k_entities":158915,"mscoco":589860,"vqa2":443757,"gqa":943000}
+import argparse
+# 创建解析器
+parser = argparse.ArgumentParser()
+# 添加参数
+parser.add_argument('dataset', type=str, help='输入数据集名称')
+parser.add_argument('num', type=int, help='输入缓存大小')
+parser.add_argument('cache_algorithm', type=str, help='输入缓存算法')
+parser.add_argument('memory', type=int, help='输入限制内存容量大小')
 
-    # 调用处理函数
-    sample_list = [i for i in range(samples[args.dataset])]  # 1-3号文件不存在用于演示错误处理
-    random.seed(123)
-    random.shuffle(sample_list)
+# 解析参数
+args = parser.parse_args()
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"dataset:{args.dataset},num:{args.num},cache_algorithm:{args.cache_algorithm},memory_size:{args.memory}\n")
 
-    import time
-    start = time.time()
-    processed = process_samples(sample_list, filename)
-    print(f"TDP random read耗时:{time.time() - start:.4f}秒") 
-    
+# flickr30k
+if args.dataset == "flickr30k":
+    filename = "/mnt/datasets/flickr30k_TDP"
+# flickr30k_entities
+if args.dataset == "flickr30k_entities":
+    filename = "/mnt/datasets/flickr30k_entities_TDP"
+# mscoco
+if args.dataset == "mscoco":
+    filename = "/mnt/datasets/mscoco_TDP"
+# vqa2
+if args.dataset == "vqa2":
+    filename = "/mnt/datasets/vqa2_TDP"
+# gqa
+if args.dataset == "gqa":
+    filename = "/mnt/datasets/gqa_TDP"
+# cc3m
+if args.dataset == "cc3m":
+    filename = "/mnt/datasets/cc3m_TDP"
+
+samples = {"flickr30k":155070,"flickr30k_entities":158915,"mscoco":589860,"vqa2":443757,"gqa":943000,"cc3m":257328}
+
+# 调用处理函数
+sample_list = [i for i in range(samples[args.dataset])]  # 1-3号文件不存在用于演示错误处理
+random.seed(123)
+random.shuffle(sample_list)
+
+import time
+start = time.time()
+processed = process_samples(sample_list, filename, args.num, args.cache_algorithm)
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"TDP random read耗时 at {args.num},{args.cache_algorithm},memory_size:{args.memory}:{time.time() - start:.4f}秒\n") 
+

@@ -2,6 +2,7 @@ import os
 from PIL import Image
 import random
 import mmap
+from files_lru import LRUCache
 
 BLOCK_SIZE = 4096
 
@@ -38,7 +39,7 @@ def read_file_with_o_direct(path):
     finally:
         os.close(fd)
 
-def process_samples(sample_ids, base_dir="data"):
+def process_samples(sample_ids, base_dir, num, cache_algorithm):
     """
     根据样本ID数组处理对应的图像和文本文件
     返回结构：{id: (图像对象, 文本内容), ...}
@@ -48,7 +49,22 @@ def process_samples(sample_ids, base_dir="data"):
         base_dir: 文件存储根目录（默认data）
     """
 
+    # 构建缓存
+    if num != 0:
+        if cache_algorithm == "lru":
+            cache = LRUCache(num)
+        hits = 0
+        count = 0
+
     for sid in sample_ids:
+        if num != 0:
+            count += 1
+            result = cache.get(sid)
+            # 缓存命中
+            if result != -1:
+                hits += 1
+                continue
+        # 缓存未命中
         # 生成6位补零文件名
         file_prefix = f"{sid:06d}"
         img_path = os.path.join(base_dir, f"{file_prefix}.jpg")
@@ -75,44 +91,52 @@ def process_samples(sample_ids, base_dir="data"):
                 print(f"文本文件 {file_prefix}.txt 读取失败: {str(e)}")
         else:
             print(f"文本文件 {file_prefix}.txt 不存在")
+        result = {"image":img_data,"caption":txt_data}
+        if num != 0:
+            cache.put(sid, result)
 
-# 使用示例
-if __name__ == "__main__":
-    import argparse
-    # 创建解析器
-    parser = argparse.ArgumentParser()
-    # 添加参数
-    parser.add_argument('dataset', type=str, help='输入数据集名称')
-    # 解析参数
-    args = parser.parse_args()
-    print(f"dataset:{args.dataset}")
+import argparse
+# 创建解析器
+parser = argparse.ArgumentParser()
+# 添加参数
+parser.add_argument('dataset', type=str, help='输入数据集名称')
+parser.add_argument('num', type=int, help='输入缓存大小')
+parser.add_argument('cache_algorithm', type=str, help='输入缓存算法')
+parser.add_argument('memory', type=int, help='输入限制内存容量大小')
 
-    # flickr30k
-    if args.dataset == "flickr30k":
-        filename = "/mnt/datasets/flickr30k_Files/000000"
-    # flickr30k_entities
-    if args.dataset == "flickr30k_entities":
-        filename = "/mnt/datasets/flickr30k_entities_Files/000000"
-    # mscoco
-    if args.dataset == "mscoco":
-        filename = "/mnt/datasets/mscoco_Files/000000"
-    # vqa2
-    if args.dataset == "vqa2":
-        filename = "/mnt/datasets/vqa2_Files/000000"
-    # gqa
-    if args.dataset == "gqa":
-        filename = "/mnt/datasets/gqa_Files/000000"
+# 解析参数
+args = parser.parse_args()
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"dataset:{args.dataset},num:{args.num},cache_algorithm:{args.cache_algorithm},memory_size:{args.memory}\n")
 
-    samples = {"flickr30k":155070,"flickr30k_entities":158915,"mscoco":589860,"vqa2":443757,"gqa":943000}
 
-    # 调用处理函数
-    sample_list = [i for i in range(samples[args.dataset])]  # 1-3号文件不存在用于演示错误处理
-    random.seed(123)
-    random.shuffle(sample_list)
-    # print(f"size={len(filename)}")
-    
-    import time
-    start = time.time()
-    process_samples(sample_list, filename)
-    print(f"Files random read耗时:{time.time() - start:.4f}秒") 
+# flickr30k
+if args.dataset == "flickr30k":
+    filename = "/mnt/datasets/flickr30k_Files/000000"
+# flickr30k_entities
+if args.dataset == "flickr30k_entities":
+    filename = "/mnt/datasets/flickr30k_entities_Files/000000"
+# mscoco
+if args.dataset == "mscoco":
+    filename = "/mnt/datasets/mscoco_Files/000000"
+# vqa2
+if args.dataset == "vqa2":
+    filename = "/mnt/datasets/vqa2_Files/000000"
+# gqa
+if args.dataset == "gqa":
+    filename = "/mnt/datasets/gqa_Files/000000"
+
+samples = {"flickr30k":155070,"flickr30k_entities":158915,"mscoco":589860,"vqa2":443757,"gqa":943000}
+
+# 调用处理函数
+sample_list = [i for i in range(samples[args.dataset])]  # 1-3号文件不存在用于演示错误处理
+random.seed(123)
+random.shuffle(sample_list)
+# print(f"size={len(filename)}")
+
+import time
+start = time.time()
+process_samples(sample_list, filename, args.num, args.cache_algorithm)
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"Files random read耗时 at {args.num},{args.cache_algorithm},memory_size:{args.memory}:{time.time() - start:.4f}秒\n") 
     

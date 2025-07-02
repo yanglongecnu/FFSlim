@@ -5,7 +5,7 @@ import random
 from cgfg_lru import LRUCache
 from cgfg_lfu import LFUCache
 from cgfg_iacma import IACMACache
-from cgfg_hapiacma import HAPIACMACache
+from cgfg_iacma_with_heap import IACMACacheWithHeap
 from fgfg_lru import FGFGLRUCache
 from fgfg_lfu import FGFGLFUCache
 from cgfg_iacma_with_memory import IACMACacheWithMemory
@@ -59,18 +59,18 @@ def process_samples(samples,batch_size,file_path,num,cache_algorithm):
 
     # 构建缓存
     if num != 0:
-        if cache_algorithm == "lru":
-            cache = LRUCache(num)
-        elif cache_algorithm == "lfu":
-            cache = LFUCache(num)
-        elif cache_algorithm == "iacma":
-            cache = IACMACache(num)
-        elif cache_algorithm == "hapiacma":
-            cache = HAPIACMACache(num)
-        elif cache_algorithm == "fgfglru":
+        if cache_algorithm == "fgfglru":
             cache = FGFGLRUCache(num)
         elif cache_algorithm == "fgfglfu":
             cache = FGFGLFUCache(num)
+        elif cache_algorithm == "lru":
+            cache = LRUCache(num)
+        elif cache_algorithm == "lfu":
+            cache = LFUCache(num)
+        elif cache_algorithm == "iacma_with_heap":
+            cache = IACMACacheWithHeap(num)
+        elif cache_algorithm == "iacma":
+            cache = IACMACache(num)
         elif cache_algorithm == "iacma_with_memory":
             cache = IACMACacheWithMemory(num)
         hits = 0
@@ -99,6 +99,13 @@ def process_samples(samples,batch_size,file_path,num,cache_algorithm):
                     #     print(f'image:{type(samples1["image"])},caption:{type(samples1["captions"][0])}')
                     if num != 0:
                         cache.put(i-i%X,samples1)
+            elif args.dataset in ["cc3m"]:
+                datasets = reader.read([i])
+                for sample in datasets:
+                    samples1 = pickle.loads(sample)
+                    result = [samples1["image"],samples1["captions"][0]]
+                    if num != 0:
+                        cache.put(i,samples1)
             else:
                 # 完全平衡二叉搜索树
                 start = time.time()
@@ -150,8 +157,11 @@ if args.dataset == "vqa2":
 # gqa
 if args.dataset == "gqa":
     filename = "/mnt/datasets/gqa_FFSlim/mscoco_caption.ffr"
+# cc3m
+if args.dataset == "cc3m":
+    filename = "/mnt/datasets/cc3m_FFSlim/mscoco_caption.ffr"
 
-samples = {"flickr30k":155060,"flickr30k_entities":158905,"mscoco":589785,"vqa2":443757,"gqa":943000}
+samples = {"flickr30k":155060,"flickr30k_entities":158905,"mscoco":589785,"vqa2":443757,"gqa":943000,"cc3m":256877}
 # 调用处理函数
 sample_list = [i+1 for i in range(samples[args.dataset])]  # 1-3号文件不存在用于演示错误处理
 batch_size = 64

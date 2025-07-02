@@ -86,6 +86,14 @@ if __name__ == "__main__":
             "image_src_dir": "/home/llm/experiment/dataset_Analysis_Modeling/datasets/GQA/gqa-images",
             "output_root": "/mnt/datasets/gqa_FFRecord"
         }
+
+    # cc3m
+    if args.dataset == "cc3m":
+        config = {
+            "csv_path": "/home/llm/experiment/dataset_Analysis_Modeling/processed_datasets/cc3m_sort.csv",
+            "image_src_dir": "/home/llm/experiment/dataset_Analysis_Modeling/datasets/cc3m/cc3m-images",
+            "output_root": "/mnt/datasets/cc3m_FFRecord"
+        }
         
     import time
     start = time.time()

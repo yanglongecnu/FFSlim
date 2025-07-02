@@ -2,28 +2,43 @@
 from ffrecord import FileReader
 import pickle
 import random
+from ffrecord_lru import LRUCache
 
-
-def process_samples(samples,batch_size,file_path):
+def process_samples(samples,batch_size,file_path,num,cache_algorithm):
     # 构建batch阶段
-    start = time.time()
     n = len(samples)//batch_size
     m = len(samples)%batch_size
     batch_samples_list = [samples[i*batch_size:i*batch_size+batch_size] for i in range(n)]
     if m > 0:
-        batch_samples_list.append(samples[n*batch_size:])
-    print(f"FFRecord map and read耗时:{time.time() - start:.4f}秒") 
+        batch_samples_list.append(samples[n*batch_size:]) 
+
+    # 构建缓存
+    if num != 0:
+        if cache_algorithm == "lru":
+            cache = LRUCache(num)
+        hits = 0
+        count = 0
 
     # 读取batch阶段
     reader = FileReader(file_path)
-    print(f"reader.n={reader.n}")
-    print(f"size={4*reader.n}")
+    # print(f"reader.n={reader.n}")
+    # print(f"size={4*reader.n}")
 
     for batch in batch_samples_list:
         for i in batch:
+            if num != 0:
+                count += 1
+                result = cache.get(i)
+                # 缓存命中
+                if result != -1:
+                    hits += 1
+                    continue   
+            # 缓存未命中         
             datasets = reader.read([i])
             for sample in datasets:
                 result = pickle.loads(sample)
+                if num != 0:
+                    cache.put(i,result)
 
 
 import argparse
@@ -31,9 +46,14 @@ import argparse
 parser = argparse.ArgumentParser()
 # 添加参数
 parser.add_argument('dataset', type=str, help='输入数据集名称')
+parser.add_argument('num', type=int, help='输入缓存大小')
+parser.add_argument('cache_algorithm', type=str, help='输入缓存算法')
+parser.add_argument('memory', type=int, help='输入限制内存容量大小')
+
 # 解析参数
 args = parser.parse_args()
-print(f"dataset:{args.dataset}")
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"dataset:{args.dataset},num:{args.num},cache_algorithm:{args.cache_algorithm},memory_size:{args.memory}\n")
 
 # flickr30k
 if args.dataset == "flickr30k":
@@ -60,5 +80,6 @@ random.shuffle(sample_list)
 
 import time
 start = time.time()
-process_samples(sample_list,batch_size,filename)
-print(f"FFRecord random read耗时:{time.time() - start:.4f}秒") 
+process_samples(sample_list,batch_size,filename, args.num, args.cache_algorithm)
+with open("/home/llm/experiment/dataset_Analysis_Modeling/output.log","a+") as f:
+    f.write(f"FFRecord random read耗时 at {args.num},{args.cache_algorithm},memory_size:{args.memory}:{time.time() - start:.4f}秒\n") 

@@ -113,6 +113,14 @@ if __name__ == "__main__":
             "output_root": "/mnt/datasets/gqa_FFSlim"
         }
 
+    # cc3m
+    if args.dataset == "cc3m":
+        config = {
+            "csv_path": "/home/llm/experiment/dataset_Analysis_Modeling/processed_datasets/cc3m_sort.csv",
+            "image_src_dir": "/home/llm/experiment/dataset_Analysis_Modeling/datasets/cc3m/cc3m-images",
+            "output_root": "/mnt/datasets/cc3m_FFSlim"
+        }
+        
     import time
     start = time.time()
     # 执行拆分

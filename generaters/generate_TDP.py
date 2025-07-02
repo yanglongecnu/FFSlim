@@ -116,6 +116,15 @@ if __name__ == "__main__":
             "new_csv": "/mnt/datasets/gqa_TDP/gqa_TDP.csv"
         }
 
+    # cc3m
+    if args.dataset == "cc3m":
+        config = {
+            "csv_path": "/home/llm/experiment/dataset_Analysis_Modeling/processed_datasets/cc3m_sort.csv",
+            "image_src_dir": "/home/llm/experiment/dataset_Analysis_Modeling/datasets/cc3m/cc3m-images",
+            "output_dir": "/mnt/datasets/cc3m_TDP/img",
+            "new_csv": "/mnt/datasets/cc3m_TDP/cc3m_TDP.csv"
+        }
+
     import time
     start = time.time()
     process_coco_dataset(**config)
